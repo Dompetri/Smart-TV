@@ -2049,7 +2049,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 			}
 			destroyHlsPlayer();
 		};
-	}, [mediaUrl, isLoading, mimeType, playMethod, error, settings.videoStartDelay, isLiveTV, sourceRevision]);
+	}, [mediaUrl, isLoading, mimeType, playMethod, error, settings.videoStartDelay, settings.forceDirectPlay, isLiveTV, sourceRevision]);
 
 	useEffect(() => {
 		if (videoRef.current) videoRef.current.muted = slideshowMuted;
@@ -2639,7 +2639,7 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		} finally {
 			isHandlingErrorRef.current = false;
 		}
-	}, [hasTriedTranscode, playMethod, mimeType, mediaUrl, item, selectedQuality, settings.maxBitrate, settings.stereoUpmixEnabled, mediaSourceId, isPaused, isLiveTV, videoQueue, onPlayNext, liveRecovery, canReconnect, reconnect]);
+	}, [hasTriedTranscode, playMethod, mimeType, mediaUrl, item, selectedQuality, settings.forceDirectPlay, settings.maxBitrate, settings.stereoUpmixEnabled, mediaSourceId, isPaused, isLiveTV, videoQueue, onPlayNext, liveRecovery, canReconnect, reconnect]);
 
 	useEffect(() => {
 		handlersRef.current = {
