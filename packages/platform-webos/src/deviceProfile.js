@@ -196,30 +196,11 @@ const canPlayHevcLevel61 = () => {
 		|| video.canPlayType('video/mp4; codecs="hev1.2.4.L183"').replace(/no/, ''));
 };
 
-const canPlayDts = () => {
-	if (typeof document === 'undefined') return false;
-	const video = document.createElement('video');
-	return !!(video.canPlayType('video/mp4; codecs="dts-"').replace(/no/, '')
-		|| video.canPlayType('video/mp4; codecs="dts+"').replace(/no/, ''));
-};
-
 // DTS support varies by webOS version AND container:
 //   webOS 4/4.5: DTS in AVI + MKV (unconditionally supported)
 //   webOS 5/6/22: DTS in MKV only
-//   webOS 23+: DTS in MKV + MP4 + TS (model-specific per LG docs)
-// LG officially flags DTS in all containers as "specific models only" on webOS 23+.
-// tv.model.edidType is an undocumented Luna config key (not in LG public developer docs)
-// that contains 'dts' on models with DTS support, e.g. "TrueHD+dts".
-// Since the key is undocumented it may be absent on some firmware even when DTS is
-// supported. We treat the three cases separately:
-//   edidType present + contains 'dts' -> DTS in MKV + MP4 + TS
-//   edidType present + no 'dts'       -> DTS not supported (explicit negative)
-//   edidType absent (null/undefined)  -> DTS in MKV only when the set's own engine says it plays DTS.
-//     LG's 2025 sets have no DTS at all and refuse the key to apps, so assuming it left them silent.
-//
-// Note on soundbars: When the TV can decode DTS, connecting a non-DTS soundbar causes
-// the TV to decode to 2.0 PCM, losing surround channels. No Luna API exposes this.
-export const getDtsContainerSupport = (webosVersion, rawEdidType = null) => {
+//   webOS 23+: DTS in MKV + MP4 + TS
+export const getDtsContainerSupport = (webosVersion) => {
 	if (webosVersion >= 23) {
 		return { mkv: true, mp4: true, ts: true, avi: false };
 	}
@@ -291,9 +272,7 @@ export const getDeviceCapabilities = async (request) => {
 
 	const {isUhd, isOled} = resolvePanelType(cfg, systemProperty, deviceInfoData);
 
-	// tv.model.edidType is undocumented and may be absent on some firmware.
-	const rawEdidType = cfg['tv.model.edidType'];
-	const dtsBase = getDtsContainerSupport(webosVersion, rawEdidType);
+	const dtsBase = getDtsContainerSupport(webosVersion);
 
 	cachedCapabilities = {
 		modelName: deviceInfoData.modelName || cfg['tv.model.modelname'] || 'Unknown',
