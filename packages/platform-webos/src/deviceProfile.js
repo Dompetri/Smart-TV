@@ -106,7 +106,7 @@ const applyAudioOutputPath = async (baseCaps, request) => {
 	return {
 		...baseCaps,
 		dts,
-		dtshd: receiverPassthrough && !!(dts.mkv || dts.mp4 || dts.ts),
+		dtshd: !!(dts.mkv || dts.mp4 || dts.ts),
 		audioOutputStatus,
 		externalAudioPathActive: receiverPassthrough
 	};
@@ -221,16 +221,7 @@ const canPlayDts = () => {
 // the TV to decode to 2.0 PCM, losing surround channels. No Luna API exposes this.
 export const getDtsContainerSupport = (webosVersion, rawEdidType = null) => {
 	if (webosVersion >= 23) {
-		if (rawEdidType == null) {
-			return { mkv: canPlayDts(), mp4: false, ts: false, avi: false };
-		}
-		const edidHasDts = rawEdidType.toLowerCase().includes('dts');
-		return {
-			mkv: edidHasDts,
-			mp4: edidHasDts,
-			ts: edidHasDts,
-			avi: false
-		};
+		return { mkv: true, mp4: true, ts: true, avi: false };
 	}
 	if (webosVersion >= 5) {
 		// webOS 5/6/22: DTS in MKV only
