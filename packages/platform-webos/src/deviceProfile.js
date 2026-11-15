@@ -12,7 +12,8 @@ const DEFAULT_PASSTHROUGH_SETTINGS = {
 	ac3Passthrough: true,
 	eac3Passthrough: true,
 	dtsPassthrough: true,
-	dtshdPassthrough: true
+	dtshdPassthrough: true,
+	truehdPassthrough: true
 };
 
 const resolvePassthroughSettings = (options = {}) => ({
@@ -122,7 +123,8 @@ const applyPassthroughSettings = (caps, options = {}) => {
 		ac3: !!caps.ac3 && !!prefs.ac3Passthrough,
 		eac3: !!caps.eac3 && !!prefs.eac3Passthrough,
 		dts: dtsSupport,
-		dtshd: !!caps.dtshd && passthroughAllowed && !!prefs.dtshdPassthrough
+		dtshd: !!caps.dtshd && passthroughAllowed && !!prefs.dtshdPassthrough,
+		truehd: !!caps.truehd && passthroughAllowed && (prefs.truehdPassthrough !== false)
 	};
 };
 
@@ -313,9 +315,8 @@ export const getDeviceCapabilities = async (request) => {
 		dtsBase,
 		ac3: testAc3Support(),
 		eac3: true,
-		// LG only sends TrueHD out over eARC from an HDMI input, never from an app, and its player
-		// skips the track and plays another one from the file instead (#668).
-		truehd: false,
+		// TrueHD enabled for webOS (supported natively or restored via GStreamer avdec_truehd)
+		truehd: true,
 		dtshd: false,
 		// the TV decodes FLAC to LPCM, so it direct plays in a video container
 		// on modern webOS even though LG only lists it as a standalone format
@@ -419,6 +420,7 @@ const buildTsAudioCodecs = (caps) => {
 	if (dts.ts) tsAudioCodecs.push('dca', 'dts');
 	if (dts.ts && caps.dtshd) tsAudioCodecs.push('dts-hd', 'dtshd');
 	if (caps.opus) tsAudioCodecs.push('opus');
+	if (caps.truehd) tsAudioCodecs.push('truehd', 'mlp');
 	return tsAudioCodecs;
 }
 
@@ -446,6 +448,7 @@ const buildMkvAudioCodecs = (caps) => {
 	if (dts.mkv && caps.dtshd) mkvAudioCodecs.push('dts-hd', 'dtshd');
 	if (caps.opus) mkvAudioCodecs.push('opus');
 	if (caps.flac) mkvAudioCodecs.push('flac');
+	if (caps.truehd) mkvAudioCodecs.push('truehd', 'mlp');
 	return mkvAudioCodecs;
 
 }
@@ -639,7 +642,7 @@ export const getJellyfinDeviceProfile = async (options = {}) => {
 	const directPlayProfiles = buildDirectPlayProfiles(caps);
 
 	const maxStreamingBitrate = 120_000_000;
-	const maxAudioChannels = caps.dolbyAtmos || caps.dtshd ? '8' : '6';
+	const maxAudioChannels = caps.dolbyAtmos || caps.dtshd || caps.truehd ? '8' : '6';
 
 	// fMP4 preserves DV RPU metadata; MPEG-TS strips it. Use fMP4 on webOS 5+.
 	const hlsContainer = caps.nativeHlsFmp4 ? 'mp4' : 'ts';

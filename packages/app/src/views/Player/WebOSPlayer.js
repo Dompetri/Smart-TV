@@ -1940,6 +1940,12 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				if (pending) {
 					if (video.audioTracks?.length > 1) {
 						const matchIndex = matchAudioTrack(video.audioTracks, pending.audioStreams, pending.streamIndex, playsNatively);
+						console.log('[WebOSPlayer] onFirstTimeUpdate native track match result:', {
+							matchIndex,
+							streamIndex: pending.streamIndex,
+							audioStreams: pending.audioStreams?.map(s => ({index: s.index, codec: s.codec, lang: s.language})),
+							nativeTracksCount: video.audioTracks.length
+						});
 						if (matchIndex >= 0) {
 							const playingIndex = Array.prototype.findIndex.call(video.audioTracks, (track) => track.enabled);
 							const switched = playingIndex !== matchIndex;
@@ -1959,16 +1965,29 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 							// Left alone, the TV plays a track of its own choosing, so the server sends one
 							// with only the chosen track in it. A reload that comes back as direct play
 							// again doesn't try a second time.
-							serverLogger.playback('Audio: TV track list does not match, asking the server', {
+							console.warn('[WebOSPlayer] TV track list does not match, evaluating fallback:', {
 								jellyfinIndex: pending.streamIndex,
 								nativeTracks: video.audioTracks.length,
-								audioStreams: pending.audioStreams.length
+								audioStreams: pending.audioStreams.length,
+								playMethod,
+								forceDirectPlay: settings.forceDirectPlay
 							});
-							reloadWithAudioRef.current?.(pending.streamIndex);
+							const isTrueHdOrForced = settings.forceDirectPlay || pending.audioStreams?.some(s => (s.codec || '').toLowerCase() === 'truehd');
+							if (playMethod === playback.PlayMethod.DirectPlay && isTrueHdOrForced) {
+								console.log('[WebOSPlayer] Keeping DirectPlay despite track list mismatch to avoid server transcode failure');
+							} else {
+								serverLogger.playback('Audio: TV track list does not match, asking the server', {
+									jellyfinIndex: pending.streamIndex,
+									nativeTracks: video.audioTracks.length,
+									audioStreams: pending.audioStreams.length
+								});
+								reloadWithAudioRef.current?.(pending.streamIndex);
+							}
 						}
 						pendingAudioRef.current = null;
 					} else if (!video.audioTracks || video.audioTracks.length > 0) {
 						// No track list or a single track, nothing to switch
+						console.log('[WebOSPlayer] Single track or no audioTracks, keeping native track playback');
 						pendingAudioRef.current = null;
 					}
 				}
@@ -2528,6 +2547,13 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 		}
 
 		if (!hasTriedTranscode && playMethod !== playback.PlayMethod.Transcode) {
+			if (settings.forceDirectPlay) {
+				console.warn('[Player] DirectPlay failed but forceDirectPlay is enabled, aborting transcode fallback');
+				destroyHlsPlayer();
+				await cleanupVideoElement(videoRef.current);
+				setError(errorMessage);
+				return;
+			}
 			// Tier 1 → DirectPlay failed, try native HEVC transcode (Starfish)
 			console.log('[Player] DirectPlay failed, falling back to transcode...');
 			setHasTriedTranscode(true);

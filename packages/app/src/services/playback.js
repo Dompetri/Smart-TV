@@ -751,6 +751,13 @@ export const getPlaybackInfo = async (itemId, options = {}) => {
 		);
 		const defaultCodec = (defaultAudioStream?.Codec || '').toLowerCase();
 		const defaultPlayable = playableAudio(defaultAudioStream);
+		console.log('[playback] Default audio stream check:', {
+			index: defaultAudioStream?.Index,
+			codec: defaultCodec,
+			playable: defaultPlayable,
+			truehdCap: capabilities?.truehd,
+			dtshdCap: capabilities?.dtshd
+		});
 
 		if (defaultAudioStream && !defaultPlayable) {
 			// The default audio cant be played, but the file may carry a compatible

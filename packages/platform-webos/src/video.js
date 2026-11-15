@@ -14,7 +14,8 @@ const DEFAULT_PASSTHROUGH_SETTINGS = {
 	ac3Passthrough: true,
 	eac3Passthrough: true,
 	dtsPassthrough: true,
-	dtshdPassthrough: true
+	dtshdPassthrough: true,
+	truehdPassthrough: true
 };
 
 const resolvePassthroughSettings = (options = {}) => ({
@@ -103,6 +104,10 @@ export const getSupportedAudioCodecs = (capabilities, container = '', passthroug
 		if (dtsOk && capabilities.dtshd) codecs.push('dts-hd', 'dtshd', 'dtsx');
 	}
 
+	if (capabilities.truehd && passthroughAllowed && (passthrough.truehdPassthrough !== false)) {
+		codecs.push('truehd', 'mlp');
+	}
+
 	if (capabilities.opus) codecs.push('opus');
 	codecs.push('vorbis', 'wma', 'amr', 'amrnb', 'amrwb');
 
@@ -115,7 +120,9 @@ export const isAudioStreamPlayable = (stream, capabilities, passthroughOptions =
 	const codec = (stream.Codec || '').toLowerCase();
 	if (!codec) return true;
 	const supported = getSupportedAudioCodecs(capabilities, '', passthroughOptions);
-	return supported.includes(codec);
+	const playable = supported.includes(codec);
+	console.log(`[webosVideo] isAudioStreamPlayable: codec="${codec}", playable=${playable}, truehd=${capabilities?.truehd}, dtshd=${capabilities?.dtshd}`);
+	return playable;
 };
 
 /**
