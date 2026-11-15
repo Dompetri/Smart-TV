@@ -970,7 +970,14 @@ export const getPlaybackInfo = async (itemId, options = {}) => {
 	// Starfish needs a DV codec hint in the MIME type to activate the DV decoder
 	if (playMethod !== PlayMethod.Transcode && !isAudio && videoRangeType) {
 		const rangeType = videoRangeType.toUpperCase();
-		if (rangeType.includes('DOVI')) {
+		const isProfile7 = rangeType.includes('DOVIWITHEL') || rangeType.includes('PROFILE7') || (videoStream && videoStream.DvProfile === 7);
+		if (isProfile7) {
+			console.log('[playback] DV Profile 7 detected (EL) - playing as HDR10 base layer without DV codec hint to avoid black screen:', {
+				rangeType,
+				dvProfile: videoStream?.DvProfile,
+				mimeType
+			});
+		} else if (rangeType.includes('DOVI')) {
 			const streamCodec = (videoStream.Codec || '').toLowerCase();
 			let dvCodec;
 			if (streamCodec === 'dvhe') {
@@ -981,6 +988,7 @@ export const getPlaybackInfo = async (itemId, options = {}) => {
 				dvCodec = rangeType === 'DOVI' ? 'dvhe.05' : 'dvh1.08';
 			}
 			mimeType = mimeType + '; codecs="' + dvCodec + '"';
+			console.log('[playback] Enhanced MIME type with DV codec:', mimeType);
 		}
 	}
 

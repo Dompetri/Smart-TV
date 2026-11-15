@@ -1906,7 +1906,10 @@ const Player = ({item, resume, initialMediaSourceId, initialAudioIndex, initialS
 				chooseHostReader(video, playback.getCurrentSession());
 				video.src = srcUrl;
 				// Pass DV / codec hints so Starfish can activate the right decoder
-				if (mimeType) video.type = mimeType;
+				if (mimeType) {
+					console.log('[Player] Setting video.type to:', mimeType);
+					video.type = mimeType;
+				}
 				video.load();
 			}
 

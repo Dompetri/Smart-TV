@@ -222,7 +222,14 @@ export const getPlayMethod = (mediaSource, capabilities, options = {}, passthrou
 	const videoRangeType = videoRangeTypeOf(videoStream);
 	if (videoRangeType) {
 		const rangeType = videoRangeType.toUpperCase();
-		if (rangeType === 'DOVI') {
+		const isProfile7 = rangeType.includes('DOVIWITHEL') || rangeType.includes('PROFILE7') || (videoStream && videoStream.DvProfile === 7);
+		if (isProfile7) {
+			// Profile 7 has an enhancement layer (EL) that LG hardware cannot decode as dual-layer DV.
+			// It plays directly as its HDR10 base layer.
+			hdrOk = capabilities.hdr10;
+			isDolbyVision = false;
+			console.log('[webosVideo] DV Profile 7 detected (EL) - using HDR10 base layer');
+		} else if (rangeType === 'DOVI') {
 			// Pure DV with no fallback layer needs native DV support
 			hdrOk = capabilities.dolbyVision;
 			isDolbyVision = true;
@@ -231,7 +238,7 @@ export const getPlayMethod = (mediaSource, capabilities, options = {}, passthrou
 			// DV with fallback layer - check if we can play the fallback
 			if (capabilities.dolbyVision) {
 				hdrOk = true; // Native DV support
-			} else if (rangeType.includes('HDR10') && capabilities.hdr10) {
+			} else if ((rangeType.includes('HDR10') || rangeType.includes('DOVIWITHEL')) && capabilities.hdr10) {
 				hdrOk = true; // HDR10 fallback layer
 				console.log('[webosVideo] DV with HDR10 fallback - will use HDR10 layer');
 			} else if (rangeType.includes('HLG') && capabilities.hlg) {
